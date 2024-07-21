@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Table</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body, html {
+            height: 100%;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100%;
+        }
+        .attendance-table {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .attendance-table h2 {
+            margin-bottom: 20px;
+        }
+        .attendance-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .attendance-table th, .attendance-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        .attendance-table thead {
+            background-color: #f8f9fa;
+        }
+        .attendance-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .attendance-table .text-end {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="attendance-table bg-light">
+            <div class="text-center">
+                <h2>Attendance List</h2>
+            </div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Student Name</th>
+                        <th scope="col">Registration Number</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-body">
+                  
+                </tbody>
+            </table>
+            <div class="text-end">
+                <p>Total Absentees: <span id="total-absentees"></span></p>
+            </div>
+        </div>
+
+        <div class="attendance-form bg-light p-4 rounded">
+            <h2 class="text-center">Add New Attendance Record</h2>
+            <form id="attendance-form">
+                <div class="mb-3">
+                    <label for="studentName" class="form-label">Student Name</label>
+                    <input type="text" class="form-control" id="studentName" required>
+                </div>
+                <div class="mb-3">
+                    <label for="regNo" class="form-label">Registration Number</label>
+                    <input type="text" class="form-control" id="regNo" required>
+                </div>
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-control" id="status" required>
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                    </select>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/attendance-data')
+                .then(response => response.json())
+                .then(data => {
+                    populateAttendanceTable(data);
+                })
+                .catch(error => console.error('Error fetching attendance data:', error));
+
+            const form = document.getElementById('attendance-form');
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const studentName = document.getElementById('studentName').value;
+                const regNo = document.getElementById('regNo').value;
+                const status = document.getElementById('status').value;
+
+                const newRecord = {
+                    name: studentName,
+                    regNo: regNo,
+                    status: status
+                };
+
+                fetch('/add-attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newRecord)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    populateAttendanceTable(data);
+                    form.reset();
+                })
+                .catch(error => console.error('Error adding attendance record:', error));
+            });
+        });
+
+        function populateAttendanceTable(data) {
+            const attendanceBody = document.getElementById('attendance-body');
+            const totalAbsenteesElement = document.getElementById('total-absentees');
+            attendanceBody.innerHTML = '';
+            let totalAbsentees = 0;
+
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <th scope="row">${index + 1}</th>
+                    <td>${item.name}</td>
+                    <td>${item.regNo}</td>
+                    <td>${item.status}</td>
+                `;
+                if (item.status === 'Absent') {
+                    totalAbsentees++;
+                }
+                attendanceBody.appendChild(row);
+            });
+
+            totalAbsenteesElement.textContent = totalAbsentees;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
